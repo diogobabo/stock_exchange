@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   intl: ^0.17.0
-  http: ^0.13.3
   
   cupertino_icons: ^1.0.6
   chart_sparkline: ^1.0.13
