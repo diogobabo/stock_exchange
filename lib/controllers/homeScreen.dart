@@ -4,11 +4,8 @@ import 'package:stock_exchange/controllers/homeScreen/homeScreenBody.dart';
 import 'package:intl/intl.dart';
 import 'package:stock_exchange/models/stock.dart';
 import 'package:chart_sparkline/chart_sparkline.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marqueer/marqueer.dart';
-import 'package:stock_exchange/widgets/NewSheetWidget.dart';
 
 import '../widgets/DetailSheetWidget.dart';
 import '../widgets/homeScreenWidget.dart';
@@ -26,7 +23,10 @@ class HomeScreenState extends State<HomeScreen>
   double opacityRate = 1;
   double bottomSheetInitialRate = 0.2;
   bool marqueeVisible = true;
-  StockList stockList = StockList(data: [
+  int selectedStockIndex = 0;
+  StockList stockList = StockList(
+      date: DateTime.now(),
+      data: [
     Stock(
         open: 0.0,
         high: 0.0,
@@ -38,6 +38,7 @@ class HomeScreenState extends State<HomeScreen>
         symbol: 0,
         exchange: 0)
   ]);
+  Stock? secondaryStock;
   final controller = DraggableScrollableController();
 
   @override
@@ -61,17 +62,26 @@ class HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _fetchStocks() async {
-    final data = await rootBundle.load("assets/data.json");
-    final map = json.decode(
-      utf8.decode(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-      ),
-    );
-
+    final jsonData = await readJson();
+    final map = json.decode(jsonData);
     setState(() {
       stockList = StockList.fromJson(map);
-      // print(stockListToJson(stockList));
     });
+    DateTime currentDate = DateTime.now();
+    DateTime storedDate = DateTime(stockList.date.year, stockList.date.month, stockList.date.day);
+    DateTime today = DateTime(currentDate.year, currentDate.month, currentDate.day);
+
+    if (storedDate.isBefore(today)) {
+      await stockList.updateStockList();
+      print(stockList);
+      final updatedJson = stockListToJson(stockList);
+      await writeJson(updatedJson);
+
+      setState(() {
+        stockList = StockList.fromJson(json.decode(updatedJson));
+      });
+    }
+
   }
 
   @override
@@ -96,10 +106,19 @@ class HomeScreenState extends State<HomeScreen>
     );
   }
 
+  void _selectSecondaryStock(Stock? stock) {
+    setState(() {
+      if(stock == secondaryStock){
+        secondaryStock = null;
+        return;
+      }
+      secondaryStock = stock;
+    });
+  }
+
   NotificationListener<DraggableScrollableNotification> buildDetailSheet() {
     return NotificationListener<DraggableScrollableNotification>(
       onNotification: (DraggableScrollableNotification dsNotification) {
-        // print("${dsNotification.extent}");
         if (dsNotification.extent > 0.99) {
           marqueeVisible = false;
         } else {
@@ -114,85 +133,27 @@ class HomeScreenState extends State<HomeScreen>
         snap: true,
         initialChildSize: 0,
         maxChildSize: 1,
-        builder: ((context, scrollController) => DetailSheetWidget(this, scrollController)),
+        builder: ((context, scrollController) {
+          final selectedStock = this.stockList.data[selectedStockIndex];
+          return DetailSheetWidget(selectedStock, scrollController, secondaryStock);
+        }),
       ),
     );
   }
 
-  SizedBox buildPersistentSheet() {
-    return SizedBox.expand(
-      child: NotificationListener<DraggableScrollableNotification>(
-        onNotification: (DraggableScrollableNotification dsNotification) {
-          // print("${dsNotification.extent}");
-          if (dsNotification.extent > 0.99) {
-            marqueeVisible = false;
-          } else {
-            marqueeVisible = true;
-          }
-          setState(() {});
-          return true;
-        },
-        child: DraggableScrollableSheet(
-          minChildSize: 0.13,
-          initialChildSize: 0.13,
-          snap: true,
-          snapSizes: const [
-            0.5,
-          ],
-          builder: (BuildContext context, ScrollController scrollController) => NewSheetWidget(this, scrollController),
-        ),
-      ),
-    );
-  }
 
   AppBar _buildAppBar() {
     String currentDate = getCurrentDate(); // Get the current date as a formatted string
-
+    marqueeVisible ? _selectSecondaryStock(secondaryStock) : null;
     return marqueeVisible
         ? AppBar(
       automaticallyImplyLeading: false,
       titleSpacing: 15,
       centerTitle: false,
       toolbarHeight: 70,
-      actions: [
-        Align(
-          alignment: Alignment.topRight,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 15),
-            height: 20,
-            width: 20,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(50),
-              color: Theme
-                  .of(context)
-                  .primaryColor,
-            ),
-            child: const OverflowBox(
-              maxWidth: 30,
-              maxHeight: 30,
-              child: Icon(
-                CupertinoIcons.ellipsis_circle_fill,
-                color: Color.fromARGB(255, 28, 28, 30),
-                size: 30,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(
-          width: 15,
-        ),
-      ],
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Stocks",
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 25,
-              height: 1,
-            ),
-          ),
           Text(
             currentDate, // Use the dynamic date here
             style: TextStyle(
@@ -211,71 +172,78 @@ class HomeScreenState extends State<HomeScreen>
       title: SizedBox(
         height: 60,
         child: Marqueer.builder(
-          itemCount: 200,
+          itemCount: stockList.data.length,
           itemBuilder: (context, i) {
-            return SizedBox(
-              width: 200,
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            final isSelected = stockList.data[i] == secondaryStock;
+            return GestureDetector(
+              onTap: () => _selectSecondaryStock(stockList.data[i]),
+              child: Container(
+                color: isSelected ? Colors.grey.withOpacity(0.5) : Colors.transparent,
+                child: SizedBox(
+                  width: 200,
+                  child: Row(
                     children: [
-                      Text(
-                        "${stockList.data[i % 12].symbol}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${stockList.data[i].symbol}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            "\$${stockList.data[i].high}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            "${((stockList.data[i].last - stockList.data[i].open) >= 0 ? '+' : '')}${((stockList.data[i].last - stockList.data[i].open) / 100).toStringAsFixed(2)}",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 52, 199, 89),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        "\$${stockList.data[i % 12].high}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      const SizedBox(
+                        width: 20,
                       ),
-                      const Text(
-                        "+2.49",
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 52, 199, 89),
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                      SizedBox(
+                        width: 60,
+                        height: 50,
+                        child: Sparkline(
+                          data: [
+                            stockList.data[i].open ?? 0.0,
+                            stockList.data[i].high ?? 0.0,
+                            stockList.data[i].low ?? 0.0,
+                            stockList.data[i].last ?? 0.0,
+                            stockList.data[i].close ?? 0.0,
+                          ],
+                          lineColor: const Color.fromARGB(255, 52, 199, 89),
+                          fillMode: FillMode.below,
+                          lineWidth: 1.5,
+                          averageLine: true,
+                          averageLabel: false,
+                          fillGradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color.fromARGB(255, 52, 199, 89),
+                              Colors.transparent
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  SizedBox(
-                    width: 60,
-                    height: 50,
-                    child: Sparkline(
-                      data: [
-                        stockList.data[i % 12].open ?? 0.0,
-                        stockList.data[i % 12].high ?? 0.0,
-                        stockList.data[i % 12].low ?? 0.0,
-                        stockList.data[i % 12].last ?? 0.0,
-                        stockList.data[i % 12].close ?? 0.0,
-                      ],
-                      lineColor: const Color.fromARGB(255, 52, 199, 89),
-                      fillMode: FillMode.below,
-                      lineWidth: 1.5,
-                      averageLine: true,
-                      averageLabel: false,
-                      fillGradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color.fromARGB(255, 52, 199, 89),
-                          Colors.transparent
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           },

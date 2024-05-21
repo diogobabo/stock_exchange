@@ -36,83 +36,12 @@ class homeScreenBody extends StatelessWidget {
           child: CustomScrollView(
             controller: this.state.scrollController,
             slivers: [
-              SliverAppBar(
-                toolbarHeight: 35,
-                centerTitle: false,
-                titleSpacing: 15,
-                title: SizedBox(
-                  height: 35,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        height: min(35, this.state.searchBarHeight),
-                        child: CupertinoSearchTextField(
-                          backgroundColor:
-                          const Color.fromARGB(255, 29, 29, 31),
-                          itemColor: const Color.fromARGB(255, 146, 146, 146)
-                              .withOpacity(this.state.opacityRate),
-                          placeholderStyle: TextStyle(
-                            color: Colors.grey.withOpacity(this.state.opacityRate),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                elevation: 0.0,
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.only(left: 15, right: 15, top: 20),
-                sliver: SliverToBoxAdapter(
-                  child: Row(
-                    children: [
-                      PullDownButton(
-                        itemBuilder: (context) => [
-                          PullDownMenuItem(
-                            onTap: () {},
-                            title: 'My Symbols',
-                          ),
-                          const PullDownMenuDivider.large(),
-                          PullDownMenuItem(
-                            title: 'New List',
-                            onTap: () {},
-                            icon: CupertinoIcons.add,
-                          ),
-                        ],
-                        animationBuilder: null,
-                        position: PullDownMenuPosition.automatic,
-                        buttonBuilder: (context, showMenu) => GestureDetector(
-                          onTap: showMenu,
-                          child: Row(
-                            children: [
-                              Text(
-                                "My Symbols",
-                                style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const Icon(
-                                CupertinoIcons.chevron_up_chevron_down,
-                                size: 20,
-                                color: Colors.blue,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
               SliverPadding(
                 padding: const EdgeInsets.only(
                   left: 15,
                   right: 15,
                   top: 15,
-                  bottom: 150,
+                  bottom: 20,
                 ),
                 sliver: SliverList.separated(
                   separatorBuilder: (context, index) => const Divider(
@@ -123,7 +52,12 @@ class homeScreenBody extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: GestureDetector(
-                      onTap: () => this.state.animatedHide(),
+                      onTap: () {
+                        this.state.setState(() {
+                          this.state.selectedStockIndex = i; // Set the selected stock index
+                        });
+                        this.state.animatedHide();
+                      },
                       child: Container(
                         color: Colors.transparent,
                         child: Row(children: [
@@ -157,11 +91,11 @@ class homeScreenBody extends StatelessWidget {
                             height: 40,
                             child: Sparkline(
                               data: [
+                                this.state.stockList.data[i].close ?? 0.0,
                                 this.state.stockList.data[i].open ?? 0.0,
                                 this.state.stockList.data[i].high ?? 0.0,
                                 this.state.stockList.data[i].low ?? 0.0,
                                 this.state.stockList.data[i].last ?? 0.0,
-                                this.state.stockList.data[i].close ?? 0.0,
                               ],
                               lineColor: const Color.fromARGB(255, 52, 199, 89),
                               fillMode: FillMode.below,
@@ -197,12 +131,13 @@ class homeScreenBody extends StatelessWidget {
                                   width: 75,
                                   padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
-                                    color:
-                                    const Color.fromARGB(255, 52, 199, 89),
+                                    color: (this.state.stockList.data[i].last - this.state.stockList.data[i].open) >= 0
+                                        ? const Color.fromARGB(255, 52, 199, 89)  // Green for positive
+                                        : const Color.fromARGB(255, 255, 0, 0),    // Red for negative
                                     borderRadius: BorderRadius.circular(5),
                                   ),
                                   child: Text(
-                                    "+${(this.state.stockList.data[i].high / 100).toStringAsFixed(2)}",
+                                    "${((this.state.stockList.data[i].last - this.state.stockList.data[i].open) >= 0 ? '+' : '')}${((this.state.stockList.data[i].last - this.state.stockList.data[i].open) / 100).toStringAsFixed(2)}",
                                     textAlign: TextAlign.end,
                                     style: const TextStyle(
                                       color: Colors.white,
@@ -210,7 +145,7 @@ class homeScreenBody extends StatelessWidget {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ),
+                                )
                               ],
                             ),
                           )
@@ -224,7 +159,6 @@ class homeScreenBody extends StatelessWidget {
             ],
           ),
         ),
-        this.state.buildPersistentSheet(),
         this.state.buildDetailSheet(),
       ],
     );
