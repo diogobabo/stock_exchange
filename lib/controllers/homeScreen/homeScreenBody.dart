@@ -224,7 +224,6 @@ class homeScreenBody extends StatelessWidget {
             ],
           ),
         ),
-        this.state.buildPersistentSheet(),
         this.state.buildDetailSheet(),
       ],
     );

@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marqueer/marqueer.dart';
-import 'package:stock_exchange/widgets/NewSheetWidget.dart';
 
 import '../widgets/DetailSheetWidget.dart';
 import '../widgets/homeScreenWidget.dart';
@@ -26,7 +25,9 @@ class HomeScreenState extends State<HomeScreen>
   double opacityRate = 1;
   double bottomSheetInitialRate = 0.2;
   bool marqueeVisible = true;
-  StockList stockList = StockList(data: [
+  StockList stockList = StockList(
+      date: DateTime.now(),
+      data: [
     Stock(
         open: 0.0,
         high: 0.0,
@@ -61,17 +62,26 @@ class HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _fetchStocks() async {
-    final data = await rootBundle.load("assets/data.json");
-    final map = json.decode(
-      utf8.decode(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-      ),
-    );
-
+    final jsonData = await readJson();
+    final map = json.decode(jsonData);
     setState(() {
       stockList = StockList.fromJson(map);
-      // print(stockListToJson(stockList));
     });
+    DateTime currentDate = DateTime.now();
+    DateTime storedDate = DateTime(stockList.date.year, stockList.date.month, stockList.date.day);
+    DateTime today = DateTime(currentDate.year, currentDate.month, currentDate.day);
+
+    if (storedDate.isBefore(today)) {
+      await stockList.updateStockList();
+      print(stockList);
+      final updatedJson = stockListToJson(stockList);
+      await writeJson(updatedJson);
+
+      setState(() {
+        stockList = StockList.fromJson(json.decode(updatedJson));
+      });
+    }
+
   }
 
   @override
@@ -119,31 +129,6 @@ class HomeScreenState extends State<HomeScreen>
     );
   }
 
-  SizedBox buildPersistentSheet() {
-    return SizedBox.expand(
-      child: NotificationListener<DraggableScrollableNotification>(
-        onNotification: (DraggableScrollableNotification dsNotification) {
-          // print("${dsNotification.extent}");
-          if (dsNotification.extent > 0.99) {
-            marqueeVisible = false;
-          } else {
-            marqueeVisible = true;
-          }
-          setState(() {});
-          return true;
-        },
-        child: DraggableScrollableSheet(
-          minChildSize: 0.13,
-          initialChildSize: 0.13,
-          snap: true,
-          snapSizes: const [
-            0.5,
-          ],
-          builder: (BuildContext context, ScrollController scrollController) => NewSheetWidget(this, scrollController),
-        ),
-      ),
-    );
-  }
 
   AppBar _buildAppBar() {
     String currentDate = getCurrentDate(); // Get the current date as a formatted string
