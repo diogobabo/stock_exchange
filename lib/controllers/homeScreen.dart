@@ -190,7 +190,7 @@ class HomeScreenState extends State<HomeScreen>
                             "${stockList.data[i].symbol}",
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -199,14 +199,14 @@ class HomeScreenState extends State<HomeScreen>
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
                           ),
                           Text(
                             "${((stockList.data[i].last - stockList.data[i].open) >= 0 ? '+' : '')}${((stockList.data[i].last - stockList.data[i].open) / 100).toStringAsFixed(2)}",
                             style: TextStyle(
                               color: Color.fromARGB(255, 52, 199, 89),
-                              fontSize: 14,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
