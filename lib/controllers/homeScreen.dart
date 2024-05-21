@@ -24,6 +24,7 @@ class HomeScreenState extends State<HomeScreen>
   double opacityRate = 1;
   double bottomSheetInitialRate = 0.2;
   bool marqueeVisible = true;
+  int selectedStockIndex = 0;
   StockList stockList = StockList(
       date: DateTime.now(),
       data: [
@@ -108,7 +109,6 @@ class HomeScreenState extends State<HomeScreen>
   NotificationListener<DraggableScrollableNotification> buildDetailSheet() {
     return NotificationListener<DraggableScrollableNotification>(
       onNotification: (DraggableScrollableNotification dsNotification) {
-        // print("${dsNotification.extent}");
         if (dsNotification.extent > 0.99) {
           marqueeVisible = false;
         } else {
@@ -123,7 +123,10 @@ class HomeScreenState extends State<HomeScreen>
         snap: true,
         initialChildSize: 0,
         maxChildSize: 1,
-        builder: ((context, scrollController) => DetailSheetWidget(this, scrollController)),
+        builder: ((context, scrollController) {
+          final selectedStock = this.stockList.data[selectedStockIndex];
+          return DetailSheetWidget(selectedStock, scrollController);
+        }),
       ),
     );
   }
@@ -138,45 +141,9 @@ class HomeScreenState extends State<HomeScreen>
       titleSpacing: 15,
       centerTitle: false,
       toolbarHeight: 70,
-      actions: [
-        Align(
-          alignment: Alignment.topRight,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 15),
-            height: 20,
-            width: 20,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(50),
-              color: Theme
-                  .of(context)
-                  .primaryColor,
-            ),
-            child: const OverflowBox(
-              maxWidth: 30,
-              maxHeight: 30,
-              child: Icon(
-                CupertinoIcons.ellipsis_circle_fill,
-                color: Color.fromARGB(255, 28, 28, 30),
-                size: 30,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(
-          width: 15,
-        ),
-      ],
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Stocks",
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 25,
-              height: 1,
-            ),
-          ),
           Text(
             currentDate, // Use the dynamic date here
             style: TextStyle(
@@ -205,7 +172,7 @@ class HomeScreenState extends State<HomeScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "${stockList.data[i % 12].symbol}",
+                        "${stockList.data[i % 10].symbol}",
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -213,15 +180,15 @@ class HomeScreenState extends State<HomeScreen>
                         ),
                       ),
                       Text(
-                        "\$${stockList.data[i % 12].high}",
+                        "\$${stockList.data[i % 10].high}",
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
-                      const Text(
-                        "+2.49",
+                      Text(
+                        "${((stockList.data[i % 10].last - stockList.data[i % 10].open) >= 0 ? '+' : '')}${((stockList.data[i % 10].last - stockList.data[i % 10].open) / 100).toStringAsFixed(2)}",
                         style: TextStyle(
                           color: Color.fromARGB(255, 52, 199, 89),
                           fontSize: 14,
@@ -238,11 +205,11 @@ class HomeScreenState extends State<HomeScreen>
                     height: 50,
                     child: Sparkline(
                       data: [
-                        stockList.data[i % 12].open ?? 0.0,
-                        stockList.data[i % 12].high ?? 0.0,
-                        stockList.data[i % 12].low ?? 0.0,
-                        stockList.data[i % 12].last ?? 0.0,
-                        stockList.data[i % 12].close ?? 0.0,
+                        stockList.data[i % 10].open ?? 0.0,
+                        stockList.data[i % 10].high ?? 0.0,
+                        stockList.data[i % 10].low ?? 0.0,
+                        stockList.data[i % 10].last ?? 0.0,
+                        stockList.data[i % 10].close ?? 0.0,
                       ],
                       lineColor: const Color.fromARGB(255, 52, 199, 89),
                       fillMode: FillMode.below,
