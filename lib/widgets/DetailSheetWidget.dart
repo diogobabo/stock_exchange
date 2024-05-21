@@ -9,8 +9,9 @@ import '../models/stock.dart';
 class DetailSheetWidget extends StatefulWidget {
   final ScrollController scrollController;
   final Stock selectedStock;
+  final Stock? secondaryStock;
 
-  DetailSheetWidget(this.selectedStock, this.scrollController);
+  DetailSheetWidget(this.selectedStock, this.scrollController, [this.secondaryStock]);
 
   @override
   _DetailSheetWidgetState createState() => _DetailSheetWidgetState();
@@ -18,7 +19,9 @@ class DetailSheetWidget extends StatefulWidget {
 
 class _DetailSheetWidgetState extends State<DetailSheetWidget> {
   late DetailSheetController _controller;
+  DetailSheetController? _secondaryController = null;
   List<double> _closeValues = [];
+  List<double>? _secondaryCloseValues;
   List<DailyPrice> _last30DaysData = [];
   int _selectedSegment = 1; // Default to '7D'
 
@@ -36,6 +39,23 @@ class _DetailSheetWidgetState extends State<DetailSheetWidget> {
       _controller = DetailSheetController(widget.selectedStock);
       _loadData();
     }
+    if (oldWidget.secondaryStock != widget.secondaryStock) {
+      if (widget.secondaryStock != null) {
+        _secondaryController = DetailSheetController(widget.secondaryStock!);
+        _loadSecondaryData(widget.secondaryStock!);
+      } else {
+        _secondaryController = null;
+        _secondaryCloseValues = null;
+      }
+    }
+  }
+
+  Future<void> _loadSecondaryData(Stock secondaryStock) async {
+    if (_secondaryController?.selectedStock.symbol == 0) {
+      return;
+    }
+    await _secondaryController?.loadStockData();
+    _updateCloseValues();
   }
 
   Future<void> _loadData() async {
@@ -58,27 +78,51 @@ class _DetailSheetWidgetState extends State<DetailSheetWidget> {
       switch (_selectedSegment) {
         case 0:
           _closeValues = _controller.getCloseValues(days: 1);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 1);
+          }
           break;
         case 1:
           _closeValues = _controller.getCloseValues(days: 7);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 7);
+          }
           break;
         case 2:
           _closeValues = _controller.getCloseValues(days: 30);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 30);
+          }
           break;
         case 3:
           _closeValues = _controller.getCloseValues(days: 90);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 90);
+          }
           break;
         case 4:
           _closeValues = _controller.getCloseValues(days: 180);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 180);
+          }
           break;
         case 5:
           _closeValues = _controller.getCloseValues(days: 365);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 365);
+          }
           break;
         case 6:
           _closeValues = _controller.getCloseValues(days: 365 * 10);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 365 * 10);
+          }
           break;
         default:
           _closeValues = _controller.getCloseValues(days: 7);
+          if (_secondaryController != null) {
+            _secondaryCloseValues = _secondaryController?.getCloseValues(days: 7);
+          }
       }
     });
   }
@@ -154,26 +198,50 @@ class _DetailSheetWidgetState extends State<DetailSheetWidget> {
                 SizedBox(
                   width: double.infinity,
                   height: 300,
-                  child: Sparkline(
-                    data: _closeValues.isNotEmpty ? _closeValues : [0, 0, 0],
-                    lineColor: const Color.fromARGB(255, 52, 199, 89),
-                    fillMode: FillMode.below,
-                    lineWidth: 1.5,
-                    enableGridLines: true,
-                    gridLineLabelColor: Colors.grey,
-                    averageLine: true,
-                    averageLabel: false,
-                    fillGradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color.fromARGB(255, 52, 199, 89),
-                        Colors.transparent
-                      ],
-                    ),
+                  child: Stack(
+                    children: [
+                      Sparkline(
+                        data: _closeValues.isNotEmpty ? _closeValues : [0, 0, 0],
+                        lineColor: const Color.fromARGB(255, 52, 199, 89),
+                        fillMode: FillMode.below,
+                        lineWidth: 1.5,
+                        enableGridLines: true,
+                        gridLineLabelColor: Colors.grey,
+                        averageLine: true,
+                        averageLabel: false,
+                        fillGradient: const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color.fromARGB(255, 52, 199, 89),
+                            Colors.transparent
+                          ],
+                        ),
+                      ),
+                      _secondaryCloseValues != null
+                          ? Sparkline(
+                              data: _secondaryCloseValues ?? [0, 0, 0],
+                              lineColor: const Color.fromARGB(255, 199, 52, 52),
+                              fillMode: FillMode.below,
+                              lineWidth: 1.5,
+                              enableGridLines: true,
+                              gridLineLabelColor: Colors.grey,
+                              averageLine: true,
+                              averageLabel: false,
+                              fillGradient: const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color.fromARGB(255, 199, 52, 52),
+                                  Colors.transparent
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ],
                   ),
+
                 ),
-                const SizedBox(height: 15),
                 SizedBox(
                   height: 100,
                   child: ListView.separated(
@@ -265,26 +333,6 @@ class _DetailSheetWidgetState extends State<DetailSheetWidget> {
                   color: Colors.grey,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              const SizedBox(width: 20),
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 15),
-                height: 25,
-                width: 25,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(50),
-                  color: const Color.fromARGB(255, 178, 178, 178),
-                ),
-                child: const OverflowBox(
-                  maxWidth: 35,
-                  maxHeight: 35,
-                  child: Icon(
-                    CupertinoIcons.xmark_circle_fill,
-                    color: Color.fromARGB(255, 51, 51, 51),
-                    size: 35,
-                  ),
                 ),
               ),
             ],

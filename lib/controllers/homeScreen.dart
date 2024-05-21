@@ -4,7 +4,6 @@ import 'package:stock_exchange/controllers/homeScreen/homeScreenBody.dart';
 import 'package:intl/intl.dart';
 import 'package:stock_exchange/models/stock.dart';
 import 'package:chart_sparkline/chart_sparkline.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marqueer/marqueer.dart';
 
@@ -39,6 +38,7 @@ class HomeScreenState extends State<HomeScreen>
         symbol: 0,
         exchange: 0)
   ]);
+  Stock? secondaryStock;
   final controller = DraggableScrollableController();
 
   @override
@@ -106,6 +106,16 @@ class HomeScreenState extends State<HomeScreen>
     );
   }
 
+  void _selectSecondaryStock(Stock? stock) {
+    setState(() {
+      if(stock == secondaryStock){
+        secondaryStock = null;
+        return;
+      }
+      secondaryStock = stock;
+    });
+  }
+
   NotificationListener<DraggableScrollableNotification> buildDetailSheet() {
     return NotificationListener<DraggableScrollableNotification>(
       onNotification: (DraggableScrollableNotification dsNotification) {
@@ -125,7 +135,7 @@ class HomeScreenState extends State<HomeScreen>
         maxChildSize: 1,
         builder: ((context, scrollController) {
           final selectedStock = this.stockList.data[selectedStockIndex];
-          return DetailSheetWidget(selectedStock, scrollController);
+          return DetailSheetWidget(selectedStock, scrollController, secondaryStock);
         }),
       ),
     );
@@ -134,7 +144,7 @@ class HomeScreenState extends State<HomeScreen>
 
   AppBar _buildAppBar() {
     String currentDate = getCurrentDate(); // Get the current date as a formatted string
-
+    marqueeVisible ? _selectSecondaryStock(secondaryStock) : null;
     return marqueeVisible
         ? AppBar(
       automaticallyImplyLeading: false,
@@ -162,71 +172,78 @@ class HomeScreenState extends State<HomeScreen>
       title: SizedBox(
         height: 60,
         child: Marqueer.builder(
-          itemCount: 200,
+          itemCount: stockList.data.length,
           itemBuilder: (context, i) {
-            return SizedBox(
-              width: 200,
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            final isSelected = stockList.data[i] == secondaryStock;
+            return GestureDetector(
+              onTap: () => _selectSecondaryStock(stockList.data[i]),
+              child: Container(
+                color: isSelected ? Colors.grey.withOpacity(0.5) : Colors.transparent,
+                child: SizedBox(
+                  width: 200,
+                  child: Row(
                     children: [
-                      Text(
-                        "${stockList.data[i % 10].symbol}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${stockList.data[i].symbol}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            "\$${stockList.data[i].high}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            "${((stockList.data[i].last - stockList.data[i].open) >= 0 ? '+' : '')}${((stockList.data[i].last - stockList.data[i].open) / 100).toStringAsFixed(2)}",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 52, 199, 89),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        "\$${stockList.data[i % 10].high}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      const SizedBox(
+                        width: 20,
                       ),
-                      Text(
-                        "${((stockList.data[i % 10].last - stockList.data[i % 10].open) >= 0 ? '+' : '')}${((stockList.data[i % 10].last - stockList.data[i % 10].open) / 100).toStringAsFixed(2)}",
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 52, 199, 89),
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                      SizedBox(
+                        width: 60,
+                        height: 50,
+                        child: Sparkline(
+                          data: [
+                            stockList.data[i].open ?? 0.0,
+                            stockList.data[i].high ?? 0.0,
+                            stockList.data[i].low ?? 0.0,
+                            stockList.data[i].last ?? 0.0,
+                            stockList.data[i].close ?? 0.0,
+                          ],
+                          lineColor: const Color.fromARGB(255, 52, 199, 89),
+                          fillMode: FillMode.below,
+                          lineWidth: 1.5,
+                          averageLine: true,
+                          averageLabel: false,
+                          fillGradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color.fromARGB(255, 52, 199, 89),
+                              Colors.transparent
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  SizedBox(
-                    width: 60,
-                    height: 50,
-                    child: Sparkline(
-                      data: [
-                        stockList.data[i % 10].open ?? 0.0,
-                        stockList.data[i % 10].high ?? 0.0,
-                        stockList.data[i % 10].low ?? 0.0,
-                        stockList.data[i % 10].last ?? 0.0,
-                        stockList.data[i % 10].close ?? 0.0,
-                      ],
-                      lineColor: const Color.fromARGB(255, 52, 199, 89),
-                      fillMode: FillMode.below,
-                      lineWidth: 1.5,
-                      averageLine: true,
-                      averageLabel: false,
-                      fillGradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color.fromARGB(255, 52, 199, 89),
-                          Colors.transparent
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           },

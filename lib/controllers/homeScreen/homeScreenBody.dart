@@ -36,38 +36,12 @@ class homeScreenBody extends StatelessWidget {
           child: CustomScrollView(
             controller: this.state.scrollController,
             slivers: [
-              SliverAppBar(
-                toolbarHeight: 35,
-                centerTitle: false,
-                titleSpacing: 15,
-                title: SizedBox(
-                  height: 35,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        height: min(35, this.state.searchBarHeight),
-                        child: CupertinoSearchTextField(
-                          backgroundColor:
-                          const Color.fromARGB(255, 29, 29, 31),
-                          itemColor: const Color.fromARGB(255, 146, 146, 146)
-                              .withOpacity(this.state.opacityRate),
-                          placeholderStyle: TextStyle(
-                            color: Colors.grey.withOpacity(this.state.opacityRate),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                elevation: 0.0,
-              ),
               SliverPadding(
                 padding: const EdgeInsets.only(
                   left: 15,
                   right: 15,
                   top: 15,
-                  bottom: 150,
+                  bottom: 20,
                 ),
                 sliver: SliverList.separated(
                   separatorBuilder: (context, index) => const Divider(
