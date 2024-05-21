@@ -13,7 +13,7 @@ class StockList {
     List<Stock> data;
     DateTime date;
     List<String> availableStocks = ["AAPL","IBM","HPE","MSFT","ORCL","GOOGL","META","TWTR","INTC","AMZN"];
-    List<String> stockNames = ["Apple Inc.","International Business Machines Corporation","Hewlett Packard Enterprise Company","Microsoft Corporation","Oracle Corporation","Alphabet Inc.","Meta Platforms Inc.","Twitter Inc.","Intel Corporation","Amazon.com Inc."];
+    List<String> stockNames = ["Apple Inc.","International Business Machines","Hewlett Packard Enterprise","Microsoft Corporation","Oracle Corporation","Alphabet Inc.","Meta Platforms Inc.","Twitter Inc.","Intel Corporation","Amazon.com Inc."];
     static String api = 'https://www.alphavantage.co/query?';
     static String apiKey = 'apikey=AJZSEHCREI4VHYM6';
     static String globalQuote = 'function=GLOBAL_QUOTE';

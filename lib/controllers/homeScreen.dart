@@ -4,7 +4,6 @@ import 'package:stock_exchange/controllers/homeScreen/homeScreenBody.dart';
 import 'package:intl/intl.dart';
 import 'package:stock_exchange/models/stock.dart';
 import 'package:chart_sparkline/chart_sparkline.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marqueer/marqueer.dart';
